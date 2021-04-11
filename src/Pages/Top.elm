@@ -12,6 +12,8 @@ import Spa.Page as Page exposing (Page)
 import Spa.Url as Url exposing (Url)
 import Tailwind.Breakpoints exposing (..)
 import Tailwind.Utilities exposing (..)
+import Task
+import Time
 
 
 page : Page Params Model Msg
@@ -33,12 +35,23 @@ type alias Params =
 
 
 type alias Model =
-    {}
+    { psi : Float
+    , direction : Maybe Direction
+    , rateInput : String
+    }
+
+
+type Direction
+    = FillUp
+    | Drain
 
 
 init : Url Params -> ( Model, Cmd Msg )
 init _ =
-    ( {}
+    ( { psi = 0
+      , direction = Nothing
+      , rateInput = ""
+      }
     , Cmd.none
     )
 
@@ -49,6 +62,11 @@ init _ =
 
 type Msg
     = Noop
+    | Tick Time.Posix
+    | ClickedFillButton
+    | ClickedDrainButton
+    | ClickedStopButton
+    | TypedInRateInput String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -57,10 +75,41 @@ update msg model =
         Noop ->
             ( model, Cmd.none )
 
+        TypedInRateInput val ->
+            ( { model | rateInput = val }, Cmd.none )
+
+        ClickedStopButton ->
+            ( { model | direction = Nothing }, Cmd.none )
+
+        ClickedFillButton ->
+            ( { model | direction = Just FillUp }, Cmd.none )
+
+        ClickedDrainButton ->
+            ( { model | direction = Just Drain }, Cmd.none )
+
+        Tick _ ->
+            case ( String.toFloat model.rateInput, model.direction ) of
+                ( Just rate, Just FillUp ) ->
+                    if model.psi < (800 - rate) then
+                        ( { model | psi = model.psi + rate }, Cmd.none )
+
+                    else
+                        ( { model | psi = 800 }, Cmd.none )
+
+                ( Just rate, Just Drain ) ->
+                    if model.psi > rate then
+                        ( { model | psi = model.psi - rate }, Cmd.none )
+
+                    else
+                        ( { model | psi = 0 }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Time.every 10 Tick
 
 
 
@@ -104,14 +153,57 @@ body model =
                 ]
             ]
             [ viewGauge model
+            , div
+                [ css
+                    [ absolute
+                    , left_0
+                    , top_0
+                    , m_5
+                    ]
+                ]
+                [ button [ onClick ClickedFillButton, css [ p_3, py_2, bg_gray_200, rounded, mr_2 ] ] [ text "Fill Up" ]
+                , button [ onClick ClickedDrainButton, css [ p_3, py_2, bg_gray_200, rounded, mr_2 ] ] [ text "Drain" ]
+                , button [ onClick ClickedStopButton, css [ p_3, py_2, bg_gray_200, rounded ] ] [ text "Stop" ]
+                , div [ css [ text_3xl, p_4 ] ] [ text (String.fromFloat model.psi) ]
+                , div []
+                    [ div [ css [ font_bold ] ] [ text "Rate" ]
+                    , input
+                        [ css [ border, rounded, p_5 ]
+                        , type_ "number"
+                        , onInput TypedInRateInput
+                        , value model.rateInput
+                        ]
+                        []
+                    ]
+                ]
             ]
         ]
 
 
 viewGauge model =
-    div [ style "width" "799px" ]
-        [ div [ css [ absolute, w_full ] ] [ img [ src "/img/gauge.png" ] [] ]
-        , div [ css [ absolute, w_full, flex, justify_center, items_center ], style "top" "202px", style "left" "11px" ]
-            [ div [ style "width" "55px" ] [ img [ src "/img/arrow.png" ] [] ]
+    div [ style "width" "700px" ]
+        [ div [ css [ absolute, w_full ], style "width" "700px" ] [ img [ src "/img/gauge.png" ] [] ]
+        , div [ css [ absolute, w_full, flex, justify_center, items_center ], style "top" "202px", style "left" "0px" ]
+            [ div
+                [ style "transform" ("rotate(" ++ String.fromFloat (psiToDeg model.psi) ++ "deg)")
+                , style "width" "55px"
+                ]
+                [ img [ src "/img/arrow.png" ] [] ]
             ]
         ]
+
+
+psiToDeg : Float -> Float
+psiToDeg psi =
+    let
+        res =
+            if psi < 0 then
+                0
+
+            else if psi > 800 then
+                800
+
+            else
+                psi
+    in
+    (res * 0.3) - 120
