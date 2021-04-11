@@ -141,7 +141,7 @@ body model =
                 , border_gray_300
                 ]
             ]
-            [ text "Guages By Paul Bruder" ]
+            [ text "Gauges By Paul" ]
         , div
             [ css
                 [ w_full
