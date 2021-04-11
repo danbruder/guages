@@ -50,7 +50,7 @@ init : Url Params -> ( Model, Cmd Msg )
 init _ =
     ( { psi = 0
       , direction = Nothing
-      , rateInput = ""
+      , rateInput = "1.2"
       }
     , Cmd.none
     )
