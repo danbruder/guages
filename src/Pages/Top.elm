@@ -38,6 +38,7 @@ type alias Model =
     { psi : Float
     , direction : Maybe Direction
     , rateInput : String
+    , psiInput : String
     }
 
 
@@ -50,7 +51,8 @@ init : Url Params -> ( Model, Cmd Msg )
 init _ =
     ( { psi = 0
       , direction = Nothing
-      , rateInput = "1.2"
+      , rateInput = "1"
+      , psiInput = "0"
       }
     , Cmd.none
     )
@@ -67,6 +69,7 @@ type Msg
     | ClickedDrainButton
     | ClickedStopButton
     | TypedInRateInput String
+    | TypedInPsiInput String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -86,6 +89,14 @@ update msg model =
 
         ClickedDrainButton ->
             ( { model | direction = Just Drain }, Cmd.none )
+
+        TypedInPsiInput val ->
+            case String.toFloat val of
+                Just psi ->
+                    ( { model | psi = psi, psiInput = val }, Cmd.none )
+
+                Nothing ->
+                    ( { model | psi = 0, psiInput = val }, Cmd.none )
 
         Tick _ ->
             case ( String.toFloat model.rateInput, model.direction ) of
@@ -165,6 +176,16 @@ body model =
                 , button [ onClick ClickedDrainButton, css [ p_3, py_2, bg_gray_200, rounded, mr_2 ] ] [ text "Drain" ]
                 , button [ onClick ClickedStopButton, css [ p_3, py_2, bg_gray_200, rounded ] ] [ text "Stop" ]
                 , div [ css [ text_3xl, p_4 ] ] [ text (String.fromFloat model.psi) ]
+                , div []
+                    [ div [ css [ font_bold ] ] [ text "Psi Input" ]
+                    , input
+                        [ css [ border, rounded, p_5 ]
+                        , type_ "number"
+                        , onInput TypedInPsiInput
+                        , value model.psiInput
+                        ]
+                        []
+                    ]
                 , div []
                     [ div [ css [ font_bold ] ] [ text "Rate" ]
                     , input
