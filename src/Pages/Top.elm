@@ -101,11 +101,11 @@ update msg model =
         Tick _ ->
             case ( String.toFloat model.rateInput, model.direction ) of
                 ( Just rate, Just FillUp ) ->
-                    if model.psi < (800 - rate) then
+                    if model.psi < (peak - rate) then
                         ( { model | psi = model.psi + rate }, Cmd.none )
 
                     else
-                        ( { model | psi = 800 }, Cmd.none )
+                        ( { model | psi = peak }, Cmd.none )
 
                 ( Just rate, Just Drain ) ->
                     if model.psi > rate then
@@ -221,10 +221,14 @@ psiToDeg psi =
             if psi < 0 then
                 0
 
-            else if psi > 800 then
-                800
+            else if psi > peak then
+                peak
 
             else
                 psi
     in
-    (res * 0.3) - 120
+    (res * 240.0 / peak) - 120
+
+
+peak =
+    800
